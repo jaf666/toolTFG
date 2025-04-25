@@ -1,0 +1,32 @@
+{
+    "ecus": [
+        {
+            "name": "IVC",
+            "id": 3,
+            "application_name": "SOME_IP_Unsecure_Domain_01",
+            "app_id": 50,
+            "mac_adress": "AA:BB:CC:DD:00:03",
+            "vlan": 1500,
+            
+            "ip": "192.168.114.3",
+            "ttl": 3,
+            "someip_port_src": 30490,
+            "someip_port_dst": 30490,
+            "someip_service": 1234
+        },
+        {
+            "name": "PCU_Proxy_Frontend",
+            "id": 98,
+            "aplication_name": "SOME_IP_Unsecure_Domain_01",
+            "app_id": 50,
+            "mac_adress": "AA:BB:CC:DD:20:60",
+            "vlan": 1500,
+
+            "ip": "192.168.114.98",
+            "ttl": 3,
+            "someip_port_src": 30490,
+            "someip_port_dst": 30490,
+            "someip_service": 1234
+        }
+    ]
+}
