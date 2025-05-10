@@ -1,25 +1,7 @@
 from scapy.all import Ether, IP, UDP, Dot1Q, Raw, sendp
+from parser import Parser
+from serviceDiscovery import someipSD
 import os
-
-
-def create_someip_packet():
-    someip_sd_payload = (
-        # Payload for the SOMEIP packet
-        b"\x00\x00\x00\x00\x00\x00\x00\x00"
-    )
-    # Capa de red con VLAN    
-    packet = (
-        # Aqui va a a tener una mac origen y una mac destino
-        Ether(src="127.0.0.1", dst="01:00:5e:4e:e4:f5") /  # Multicast MAC para 224.244.224.245
-        # Estandar que define el tagueado de la VLAN, a mi me interesa la 1500
-        Dot1Q(vlan=1500) /
-        # Direccion ip fuente y direccion IP destino
-        IP(src="192.168.100.2", dst="224.244.224.245") /
-        # Direccion UDP fuente y destino
-        UDP(sport=30490, dport=30490) /
-        # Gestionar el tema de someip a parte
-        Raw(load=someip_sd_payload)
-    )
 
 def main():
     # Setting up the networks
@@ -29,14 +11,17 @@ def main():
     #     print(f"Error setting the networks: {e}")
     
     # En mi caso particular fijo las ecus de simulacion, esto puede ser un combobox
-    origen = "PCU"
-    destino = "SA"
+    origen = "PCU_Proxy_Frontend"
+    destino = "IVC"
     # Fijo tambien el evento de prueba
     msg_to_simulate = "VehicleDynamics"
     event = "VehicleSpeed"
     # La secuencia empieza con el ofrecimiento de servicios, para ello, hay que crear un offer con SD
     # Para ello, habra que saber a donde mandar el offer, extraigo los datos de un json
-
+    sd = someipSD()
+    packet = sd.craft_offer_packet(origen, 140)
+    # Envio el paquete a la red
+    sendp(packet, iface="eth1", verbose=False)
 
 # At the moment is not neccesary to have parameters, check argparse
 if __name__ == "__main__":

@@ -1,0 +1,40 @@
+{
+    "services": [
+      {
+        "name": "VehicleDynamics",
+        "methods": [
+          {
+            "name": "VehicleSpeed",
+            "ID": 140,
+            "FIND": {
+              "Type": "0x00",
+              "Major_Version": "0x01",
+              "Minor_Version": "0xFFFFFFFF"
+            },
+            "OFFER": {
+              "Type": "0x01",
+              "Major_Version": "0x03",
+              "Minor_Version": "0x00000000"
+            },
+            "SUBSCRIBE": {
+              "Type": "0x06",
+              "EvengroupID": "0x0001"
+            },
+            "SOMEIP": {
+              "ServID": 568,
+              "SubID": 1,
+              "MethodID": 32908,
+              "MessageType": 2,
+              "Cycle": 0.02,
+              "Payload": "\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00"
+            },
+            "Rep_Phase_Time": 100,
+            "Rep_Phase_Cycle": 4,
+            "Response": "NA",
+            "EcuOrigen": "PCU",
+            "EcuDestino": "SA"
+          }
+        ]
+      }
+    ]
+}
