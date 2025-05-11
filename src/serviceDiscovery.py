@@ -9,15 +9,14 @@ class someipSD():
         # La cabacera es SOMEIP y es la misma para todos los paquetes
         self.header = SOMEIP()
         # Se establece el message ID (Service ID / Method ID)
-        self.header.srv_id = SD.SOMEIP_MSG_TYPE
+        self.header.srv_id = SD.SOMEIP_MSGID_SRVID
         self.header.method_id = 0x8100
         # Se establece el message type a 0x02, ya que los mensajes SD son de tipo notification
         self.header.msg_type = SD.SOMEIP_MSG_TYPE
 
         # Se inicializa la parte de sd
         self.s = SD()
-        self.s.set_flag("REBOOT", 1)
-        self.s.set_flag("UNICAST", 1)
+        self.s.flags = 0x03
 
     def _setSDEntry(self, method_data: Dict[str, Any], option: str, data_dst: Dict[str, Any]):
         """
@@ -26,10 +25,11 @@ class someipSD():
         aux_entry = []
         entry = SDEntry_Service()
         if option == "OFFER":
-            entry.type = method_data["OFFER"]["Type"]
+            entry.type = 1
+            # int(method_data["OFFER"]["Type"], 16)
             entry.srv_id = method_data["SOMEIP"]["ServID"]
-            entry.major_ver = method_data["OFFER"]["Major_Version"]
-            entry.minor_ver = method_data["OFFER"]["Minor_Version"]
+            entry.major_ver = int(method_data["OFFER"]["Major_Version"], 16)
+            entry.minor_ver = int(method_data["OFFER"]["Minor_Version"], 16)
             entry.n_opt_1 = 0x01
             entry.inst_id = 0x0001
             entry.ttl = 3
