@@ -16,7 +16,8 @@ class someipSD():
 
         # Se inicializa la parte de sd
         self.s = SD()
-        
+        self.s.set_flag("REBOOT", 1)
+        self.s.set_flag("UNICAST", 1)
 
     def _setSDEntry(self, method_data: Dict[str, Any], option: str, data_dst: Dict[str, Any]):
         """
