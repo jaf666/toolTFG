@@ -51,8 +51,8 @@ class Parser():
         
         # Return the data
         return {
-            "mac_src": ecu_src_data["mac_adress"],
-            "mac_dst": ecu_dst_data["mac_adress"],
+            "mac_address": ecu_src_data["mac_address"],
+            "mac_dst": ecu_dst_data["mac_address"],
             "ip_src": ecu_src_data["ip"],
             "ip_dst": ecu_dst_data["ip"],
             "udp_src": ecu_src_data["sd_port_src"],

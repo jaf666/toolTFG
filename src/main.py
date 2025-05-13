@@ -1,51 +1,59 @@
 from scapy.all import *
-from scapy.contrib.automotive.someip import *
 from parser import Parser
 from serviceDiscovery import someipSD
-import os
+import socket
+from scapy.contrib.automotive.someip import *
 
-def listen_for_subscribe(expected_service_id, timeout=2):
-    # Socket raw UDP para recibir respuestas SOME/IP
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(('', 30490))  # Asegúrate de usar el puerto del SD
+def bind_udp_socket(ip, port):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.bind((ip, port))
+    s.setblocking(False)
+    print(f"[INFO] Socket UDP escuchando en {ip}:{port}")
+    return s
 
-    sock.settimeout(timeout)
-    try:
-        ready = select.select([sock], [], [], timeout)
-        if ready[0]:
-            raw_data, addr = sock.recvfrom(2048)
-            pkt = SOMEIP(raw_data)
-            if hasattr(pkt, "entry_array"):
-                for entry in pkt.entry_array:
-                    if entry.type == 6 and entry.srv_id == expected_service_id:
-                        print("¡Recibido Subscribe válido!")
+def escuchar_subscribe_eventgroup(ack, interface="eth1", service_id=0x008C, timeout=5):
+    print("[INFO] Esperando SubscribeEventGroup...")
+    # Se envia el ACK de forma anticipada dando por hecho que habra subscribe por parte del cliente.
+    # De no haberlo se producira un error, ya que no encontrará el mensaje con el type indicado ni 
+    # el service id.
+    sendp(ack, iface="eth1", verbose=False)
+
+    def filtro(pkt):
+        if pkt.haslayer(SOMEIP):
+            someip = pkt.getlayer(SOMEIP)
+            if hasattr(someip, "entry_array"):
+                for entry in someip.entry_array:
+                    if entry.type == 0x06:
+                        print("[OK] SubscribeEventGroup recibido:")
+                        print("[INFO] Enviando ACK...")
+                        print("[OK] ACK enviado.")
                         pkt.show()
                         return True
-    except Exception as e:
-        print("Timeout o error al recibir:", e)
-    finally:
-        sock.close()
-    return False
+        return False
+
+    pkt = sniff(iface=interface, timeout=timeout, stop_filter=filtro, store=1)
+    return pkt[0] if pkt else None
 
 def main():    
-    # En mi caso particular fijo las ecus de simulacion, esto puede ser un combobox
     origen = "PCU_Proxy_Frontend"
     destino = "IVC"
-    # Fijo tambien el evento de prueba
     service = 140
 
-    # La secuencia empieza con el ofrecimiento de servicios, para ello, hay que crear un offer con SD
-    # Para ello, habra que saber a donde mandar el offer, extraigo los datos de un json
     sd = someipSD()
-    
-    packet = sd.craft_offer_packet(origen, destino, service)
-    # Envio el paquete a la red
-    sendp(packet, iface="eth1", verbose=False)
-    print("Offer enviado. Escuchando Subscribe...")
-    if listen_for_subscribe(service):
-        print("Envuiando ACK...")
-        ack = sd.craft_subscribeEventGroupACK_packet(origen, destino, service)
-        # Tiempo suficiente para poder recibir el subscribe
-# At the moment is not neccesary to have parameters, check argparse
+    data_dst = sd.myParser.ecu1_to_ecu2(origen, destino)
+
+    # Abre socket UDP para que no responda ICMP
+    udp_sock = bind_udp_socket(data_dst["ip_src"], data_dst["udp_dst"])
+
+    offer_packet = sd.craft_offer_packet(origen, destino, service)
+    ack = sd.craft_subscribeEventGroupACK_packet(origen, destino, service)
+
+    print("[INFO] Enviando OFFER...")
+    sendp(offer_packet, iface="eth1", verbose=False)
+
+    pkt_subscribe = escuchar_subscribe_eventgroup(ack, interface="eth1", service_id=service)
+
+    udp_sock.close()
+
 if __name__ == "__main__":
     main()

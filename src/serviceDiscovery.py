@@ -48,17 +48,10 @@ class someipSD():
         This method is used to craft the SOMEIP offer packet
         It returns the packet to be sent
         """
-        data_ack = self.myParser.ecu1_to_ecu2("PCU_Proxy_Frontend", "IVC")
-
         data_dst = self.myParser.multicast(sender)
-        # We have to create the offer packet with the fields:
-        # flags, res, len_entry_array, entry_array, len_option_array, option array
 
         # Busco con mi instancia parser el servicio que quiero ofrecer y obtengo los datos
         myDic = self.myParser.get_service_data(service)
-
-        # Tengo la información para ir creando el ACK que enviaré cuando reciba el subscribe del cliente
-        self.craft_subscribeEventGroupACK_packet(data_ack, myDic)
 
         # Con esos datos creo el entry value y el option array con una funcion privada
         self._setSDEntry(myDic, "OFFER", data_dst)
@@ -89,7 +82,7 @@ class someipSD():
     # el service id, el instance id y el flags. El flags es un entero que contiene la información
     # de si el servicio es multicast o unicast, y si es unicast, la dirección IP de destino.
 
-    def _SDEntry_EventGroup(self, method_data: [Dict[str, Any]]):
+    def _SDEntry_EventGroup(self, method_data):
         """
         This method is used to add the entry value to the entry array
         """
@@ -106,7 +99,8 @@ class someipSD():
         entry.ttl = 3
         entry.res = 0x000000
         entry.cnt = 0x0
-        entry.eventgroup_id = method_data["SUBSCRIBE"]["EventgroupID"]
+        entry.eventgroup_id = 0x0001
+        #int(method_data["SUBSCRIBE"]["EventgroupID"], 16)
         aux.append(entry)
         self.s.set_entryArray(aux)
         
@@ -119,7 +113,7 @@ class someipSD():
         self.header.payload = self.s
         packetACKSD = (
         # Aqui va a a tener una mac origen y una mac destino
-        Ether(src=data_dst["mac_src"], dst=data_dst["mac_dst"]) /  # La de la SA
+        Ether(src=data_dst["mac_address"], dst=data_dst["mac_dst"]) /  # La de la SA
         # Estandar que define el tagueado de la VLAN, a mi me interesa la 1500
         Dot1Q(vlan=data_dst["vlan"], prio=5) /
         # Direccion ip fuente y direccion IP destino
