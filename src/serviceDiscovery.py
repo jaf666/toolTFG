@@ -43,17 +43,22 @@ class someipSD():
             self.s.set_entryArray(aux_entry)
             self.s.set_optionArray(option_array)
     
-    def craft_offer_packet(self, sender: str, service: int) -> Ether:
+    def craft_offer_packet(self, sender: str, destino: str, service: int) -> Ether:
         """
         This method is used to craft the SOMEIP offer packet
-        It returns the packet to be sent using a socket
+        It returns the packet to be sent
         """
+        data_ack = self.myParser.ecu1_to_ecu2("PCU_Proxy_Frontend", "IVC")
+
         data_dst = self.myParser.multicast(sender)
         # We have to create the offer packet with the fields:
         # flags, res, len_entry_array, entry_array, len_option_array, option array
 
         # Busco con mi instancia parser el servicio que quiero ofrecer y obtengo los datos
         myDic = self.myParser.get_service_data(service)
+
+        # Tengo la información para ir creando el ACK que enviaré cuando reciba el subscribe del cliente
+        self.craft_subscribeEventGroupACK_packet(data_ack, myDic)
 
         # Con esos datos creo el entry value y el option array con una funcion privada
         self._setSDEntry(myDic, "OFFER", data_dst)
@@ -75,25 +80,6 @@ class someipSD():
         )
         return packetSD
 
-    def entry_array(self, entry_array: Dict[str, Any]):
-        """
-        This method is used to create the entry array
-        """
-        # List were the entry array will be stored
-        lista = []
-
-        # We have to create the entry array with the fields:
-        # flags, res, len_entry_array, entry_array, len_option_array, option array
-        self.s.entry_array = entry_array
-
-    def set_option_array(self, option_array: Dict[str, Any]):
-        """
-        This method is used to create the option array
-        """
-        # We have to create the option array with the fields:
-        # flags, res, len_entry_array, entry_array, len_option_array, option array
-        self.s.option_array = option_array
-
     # El entry_array contiene objetos como SDEntry_Service en el caso de FindService y OfferService
     # En el caso de offer, el entry_array define qué servicios se ofrecen, y qué instancias del mismo
     # El option array describe cómo acceder al servicio mencionado en el entry array
@@ -103,8 +89,44 @@ class someipSD():
     # el service id, el instance id y el flags. El flags es un entero que contiene la información
     # de si el servicio es multicast o unicast, y si es unicast, la dirección IP de destino.
 
-    def SDEntry_Service(self, entry_value: Dict[str, Any]):
+    def _SDEntry_EventGroup(self, method_data: [Dict[str, Any]]):
         """
         This method is used to add the entry value to the entry array
         """
-        pass
+        aux = []
+        entry = SDEntry_EventGroup()
+        entry.type = 0x07
+        entry.index_1 = 0x00
+        entry.index_2 = 0x00
+        entry.n_opt_1 = 0x0
+        entry.n_opt_2 = 0x0
+        entry.srv_id = method_data["SOMEIP"]["ServID"]
+        entry.inst_id = 0x0001
+        entry.major_ver = int(method_data["OFFER"]["Major_Version"], 16)
+        entry.ttl = 3
+        entry.res = 0x000000
+        entry.cnt = 0x0
+        entry.eventgroup_id = method_data["SUBSCRIBE"]["EventgroupID"]
+        aux.append(entry)
+        self.s.set_entryArray(aux)
+        
+    def craft_subscribeEventGroupACK_packet(self, sender, destino, service: int) -> Ether:
+        data_dst = self.myParser.ecu1_to_ecu2(sender, destino)
+        method_data = self.myParser.get_service_data(service)
+
+        self._SDEntry_EventGroup(method_data)
+
+        self.header.payload = self.s
+        packetACKSD = (
+        # Aqui va a a tener una mac origen y una mac destino
+        Ether(src=data_dst["mac_src"], dst=data_dst["mac_dst"]) /  # La de la SA
+        # Estandar que define el tagueado de la VLAN, a mi me interesa la 1500
+        Dot1Q(vlan=data_dst["vlan"], prio=5) /
+        # Direccion ip fuente y direccion IP destino
+        IP(src=data_dst["ip_src"], dst=data_dst["ip_dst"]) /
+        # Direccion UDP fuente y destino
+        UDP(sport=data_dst["udp_src"], dport=data_dst["udp_dst"]) /
+        # La gestion de SD la hace la clase someipSD
+        self.header
+        )
+        return packetACKSD
