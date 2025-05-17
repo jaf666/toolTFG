@@ -8,7 +8,7 @@ class someipSD():
         self.myParser = Parser()
         # La cabacera es SOMEIP y es la misma para todos los paquetes
         self.header = SOMEIP()
-        # Se establece el message ID (Service ID / Method ID)
+        # Se establece el message ID, formado por (Service ID / Method ID)
         self.header.srv_id = SD.SOMEIP_MSGID_SRVID
         self.header.method_id = 0x8100
         # Se establece el message type a 0x02, ya que los mensajes SD son de tipo notification
@@ -124,3 +124,6 @@ class someipSD():
         self.header
         )
         return packetACKSD
+    
+    def sendSDpacket(self, pk, interface='eth1'):
+        sendp(x=pk, verbose=False, iface=interface)

@@ -7,17 +7,20 @@ class Parser():
     This class is used to parse ECU definition from a json
     and services packet data from a json
     """
+    # Se incluyen las rutas relatativas de los fichero que contienen la información
+    # de las ECUs y de los servicios asociados a las mismas.
     ECU_DATA_PATH = "../data/ecu_data.json"
     SERVICES_DATA_PATH = "../data/services.json"
 
     def __init__(self):
         """
-        This method is used to initialize the class
+        Método inicializador de la clase, carga los ficheros json una vez para evitar
+        múltiples cargas adicionales.
         """
-        #if not os.path.isfile(Parser.ECU_DATA_PATH):
-        #    raise FileNotFoundError(f"Missing ECU file: {Parser.ECU_DATA_PATH}")
-        #if not os.path.isfile(Parser.SERVICES_DATA_PATH):
-        #    raise FileNotFoundError(f"Missing services file: {Parser.SERVICES_DATA_PATH}")
+        if not os.path.isfile(Parser.ECU_DATA_PATH):
+            raise FileNotFoundError(f"Missing ECU file: {Parser.ECU_DATA_PATH}")
+        if not os.path.isfile(Parser.SERVICES_DATA_PATH):
+            raise FileNotFoundError(f"Missing services file: {Parser.SERVICES_DATA_PATH}")
 
         with open(Parser.ECU_DATA_PATH, "r") as f:
             self.ecus = json.load(f)["ecus"]
@@ -33,7 +36,7 @@ class Parser():
             if ecu_definition["name"] == key:
                 return ecu_definition
         
-        # If the key is not found, return None
+        # Si no se encuentra la clave en el diccionario se devuelve None
         return None
     
     def ecu1_to_ecu2(self, ecu_src: str, ecu_dst: str) -> Dict[str, Any]:
@@ -57,6 +60,8 @@ class Parser():
             "ip_dst": ecu_dst_data["ip"],
             "udp_src": ecu_src_data["sd_port_src"],
             "udp_dst": ecu_dst_data["sd_port_dst"],
+            "someip_port_src": ecu_src_data["someip_port_src"],
+            "someip_port_dst": ecu_dst_data["someip_port_dst"],
             "vlan": ecu_src_data["vlan"]
         }
     
@@ -72,7 +77,7 @@ class Parser():
         if not ecu1_data:
             return None
         
-        # Return the data
+        # Devuelve los datos origen/destino para un envíon multicast
         return {
             "mac_address": ecu1_data["mac_address"],
             "MAC_1500_MULTICAST": ecu1_data["MAC_1500_MULTICAST"],
@@ -87,7 +92,8 @@ class Parser():
 
     def get_service_data(self, service_id: int) -> Optional[Dict[str, Any]]:
         """
-        This method is used to get the service data from the services definitions
+        Este método es usado para obetener los datos del servicio a partir del fichero
+        de definición de los servicios
         """
         for service in self.services:
             for method in service.get("methods", []):
@@ -124,3 +130,9 @@ class Parser():
                         "EcuOrigen": method.get("EcuOrigen"),
                     }
         return None
+    
+    def get_ecus(self) -> List[str]:
+        """
+        Método que devuelve las ecus disponibles
+        """
+        return [ecu["name"] for ecu in self.ecus]
