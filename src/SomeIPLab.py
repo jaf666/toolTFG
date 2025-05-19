@@ -1,4 +1,4 @@
-from typing import Union, Tuple
+from typing import Tuple
 from parser import Parser
 from serviceDiscovery import someipSD
 from someip import Someip
@@ -36,12 +36,14 @@ class MyLab:
         origen, destino = ecu_pair
         allowed_ecus = self.myParser.get_ecus()
 
+        # Si el par de ECUs no se ecuentra entre las posibles devolver error
         for ecu in ecu_pair:
             if ecu not in allowed_ecus:
                 raise NotImplementedError(
                     f"ECU '{ecu}' no está soportada. Solo se permiten: {allowed_ecus}"
                 )
-
+        
+        # Comienza el servidor SOME/IP
         try:
             sd = someipSD()
             sock = socketHandler()
@@ -49,18 +51,21 @@ class MyLab:
 
             udp_sock = sock.bind_udp_socket(self.data_dst["ip_src"], self.data_dst["udp_dst"])
 
-            offer_packet = sd.craft_offer_packet(origen, destino, service_id)
-            ack = sd.craft_subscribeEventGroupACK_packet(origen, destino, service_id)
+            i = 0
+            while i != 1:
 
-            print("[INFO] Enviando OFFER...")
-            sd.sendSDpacket(offer_packet)
+                offer_packet = sd.craft_offer_packet(origen, destino, service_id)
+                ack = sd.craft_subscribeEventGroupACK_packet(origen, destino, service_id)
 
-            pkt_subscribe = sock.escuchar_subscribe_eventgroup(ack)
+                print("[INFO] Enviando OFFER...")
+                sd.sendSDpacket(offer_packet)
 
-            # Aqui se incia el envio de eventos someip. El ttl es de 3 asi que cada 0.2s se envia un paquete
-            # 3/0.2 nos da apra 15 paquetes la secuencia antes de que se desuscriba.
-
-            self.someip_server_send_event(service_id)
+                pkt_subscribe = sock.escuchar_subscribe_eventgroup(ack)
+                
+                i+=1
+                # Aqui se incia el envio de eventos someip. El ttl es de 3 asi que cada 0.2s se envia un paquete
+                # 3/0.2 nos da apra 15 paquetes la secuencia antes de que se desuscriba.
+                self.someip_server_send_event(service_id)
 
             udp_sock.close()
             return True, "Servidor iniciado correctamente"
@@ -84,6 +89,7 @@ class MyLab:
         try:
             print("[INFO] Enviando EVENTO...")
             pk = some.craft_someip_pk(service_id, self.data_dst)
+            pk.show()
             some.send_someip(pk)
         except Exception as e:
             return False, "Error al enviar el evento"

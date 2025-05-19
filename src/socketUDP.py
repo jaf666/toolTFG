@@ -13,6 +13,11 @@ class socketHandler():
     una pequeña latencia por parte de la función sniff, que es considerada en la simulación.
     """
     def bind_udp_socket(self, ip, port):
+        """
+        Función para hacer bind al puerto, de no ser así se observará un mensaje ICMP de destination+
+        port unreachable, ya que no existe un puerto en el sistema operativo para recibir el mensaje
+        SOME/IP enviado por la ECU real en la ECU simulada.
+        """
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.bind((ip, port))
         s.setblocking(False)

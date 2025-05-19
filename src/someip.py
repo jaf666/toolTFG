@@ -1,11 +1,12 @@
 from scapy.contrib.automotive.someip import *
-from scapy.all import *
+from scapy.all import Ether, Dot1Q, IP, sendp
 from typing import Any, Dict
 from parser import Parser
 
 class Someip():
     """
     Clase empleada para la creación y envío de paquetes SOME/IP
+    ToDo session id
     """
     def __init__(self,):
         self.some = SOMEIP()
@@ -15,21 +16,14 @@ class Someip():
         data = self.myParser.get_service_data(service)
         payload = data["SOMEIP"]["Payload"]
 
-        #self.some.srv_id = data["SOMEIP"]["ServID"] # perfe
-        #self.some.sub_id = data["SOMEIP"]["SubID"] # perfe
-        #self.some.event_id = service
-
-        #self.some.session_id = 0x0000  # puede ser random si quieres
-        #self.some.msg_type = data["SOMEIP"]["MessageType"]  # 0x83 = Notification (Cyclic Event)
-
-        self.some.srv_id = 0x008C
-        self.some.method_id = data["SOMEIP"]["MethodID"]
-        self.some.client_id = 0x0001
-        self.some.session_id = 0x0000
-        self.some.iface_ver = 1
-        self.some.proto_ver = 1
-        self.some.msg_type = 2
-        self.some.retcode = 0x00  
+        self.some.srv_id = 568
+        self.some.sub_id = 32908
+        self.some.client_id = 0x0701
+        self.some.session_id = 0x0001
+        self.some.proto_ver = 0x01
+        self.some.iface_ver = 0x01
+        self.some.msg_type = 0x02
+        self.some.retcode = 0x00
         self.some.add_payload(payload)
 
         pk = (
@@ -40,10 +34,13 @@ class Someip():
             self.some
         )
         return pk
-
     
     def send_someip(self, pk):
         sendp(x=pk, verbose=False, iface='eth1')
 
     def custom_payload():
+        """
+        Función para customizar el payload, la idea sería dado un servicio parsear el def
+        file asociado al evento que queremos simular. Extrayendo sus campos para poder establecerlos
+        """
         pass

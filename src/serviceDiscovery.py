@@ -4,6 +4,13 @@ from parser import Parser
 from typing import Dict, Any
 
 class someipSD():
+    """
+    Clase para la creación y envío de paquetes de tipo OFFER y ACK.
+    """
+    # Se crea un atributo privado de clase para que en cada instanciación
+    # se incremente el session id
+    __session_id = 0
+    
     def __init__(self, ):
         self.myParser = Parser()
         # La cabacera es SOMEIP y es la misma para todos los paquetes
@@ -11,6 +18,8 @@ class someipSD():
         # Se establece el message ID, formado por (Service ID / Method ID)
         self.header.srv_id = SD.SOMEIP_MSGID_SRVID
         self.header.method_id = 0x8100
+        someipSD.__session_id += 1
+        self.header.session_id = someipSD.__session_id
         # Se establece el message type a 0x02, ya que los mensajes SD son de tipo notification
         self.header.msg_type = SD.SOMEIP_MSG_TYPE
 
@@ -53,11 +62,14 @@ class someipSD():
         # Busco con mi instancia parser el servicio que quiero ofrecer y obtengo los datos
         myDic = self.myParser.get_service_data(service)
 
+        # Creo un nuevo objeto para que se incremente el session id. De no ser así cada offer
+        # no sería una nueva instancia de la clase y no podría ser tratada de forma independiente.
+        new = someipSD()
         # Con esos datos creo el entry value y el option array con una funcion privada
-        self._setSDEntry(myDic, "OFFER", data_dst)
+        new._setSDEntry(myDic, "OFFER", data_dst)
 
         # Cabecera SOMEIP y la payload es la parte de SD
-        self.header.payload = self.s
+        new.header.payload = new.s
         # Capa de red con VLAN    
         packetSD = (
             # Aqui va a a tener una mac origen y una mac destino
@@ -69,7 +81,7 @@ class someipSD():
             # Direccion UDP fuente y destino
             UDP(sport=data_dst["sd_port_src"], dport=data_dst["sd_port_dst"]) /
             # La gestion de SD la hace la clase someipSD
-            self.header
+            new.header
         )
         return packetSD
 
