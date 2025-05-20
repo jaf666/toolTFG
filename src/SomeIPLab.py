@@ -3,6 +3,11 @@ from parser import Parser
 from serviceDiscovery import someipSD
 from someip import Someip
 from socketUDP import socketHandler
+import os, sys
+# Agrega el directorio raíz del proyecto al path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from plugins.VehicleDynamicsPlugin import VehicleDynamicsPlugin
 
 class MyLab:
     """
