@@ -91,7 +91,6 @@ class MyLab:
         :return: verdict and comment
         :rtype: bool, str
         """
-
         try:
             print("[INFO] Enviando EVENTO...")
             some = Someip()

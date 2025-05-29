@@ -1,11 +1,20 @@
-from scapy.all import *
+from scapy.all import Ether, Dot1Q, IP, sendp
 from scapy.contrib.automotive.someip import *
 from parser import Parser
 from typing import Dict, Any
 
 class someipSD():
     """
-    Clase para la creación y envío de paquetes de tipo OFFER y ACK.
+    Clase para la creación, configuración y envío de paquetes SOME/IP-SD, 
+    principalmente de tipo OFFER y ACK.
+
+    Encapsula la lógica necesaria para construir correctamente los mensajes 
+    SOME/IP con sus respectivas entradas y opciones, así como la gestión 
+    del Session ID para cada instancia.
+
+    :ivar header: Cabecera SOME/IP configurada por instancia.
+    :ivar s: Objeto SD para encapsular las entradas y opciones del paquete.
+    :ivar myParser: Instancia del parser de servicios y configuración.
     """
     # Se crea un atributo privado de clase para que en cada instanciación
     # se incremente el session id
@@ -29,7 +38,16 @@ class someipSD():
 
     def _setSDEntry(self, method_data: Dict[str, Any], option: str, data_dst: Dict[str, Any]):
         """
-        This method is used to set the entry value and the option array
+        Establece las entradas (entry) y opciones (option) del paquete SD según el tipo especificado.
+
+        :param method_data: Diccionario con la información del servicio.
+        :type method_data: Dict[str, Any]
+
+        :param option: Tipo de operación SD (e.g., "OFFER").
+        :type option: str
+
+        :param data_dst: Información de destino de red como IP, MAC y puertos.
+        :type data_dst: Dict[str, Any]
         """
         aux_entry = []
         entry = SDEntry_Service()
@@ -54,8 +72,19 @@ class someipSD():
     
     def craft_offer_packet(self, sender: str, destino: str, service: int) -> Ether:
         """
-        This method is used to craft the SOMEIP offer packet
-        It returns the packet to be sent
+        Construye un paquete SOME/IP-SD de tipo OFFER listo para ser enviado.
+
+        :param sender: ECU origen que genera el paquete.
+        :type sender: str
+
+        :param destino: ECU destino que recibirá el paquete.
+        :type destino: str
+
+        :param service: ID del servicio SOME/IP a anunciar.
+        :type service: int
+
+        :return: Paquete Ethernet completo con encabezados VLAN, IP, UDP y SOME/IP.
+        :rtype: Ether
         """
         data_dst = self.myParser.multicast(sender)
 
@@ -96,7 +125,10 @@ class someipSD():
 
     def _SDEntry_EventGroup(self, method_data):
         """
-        This method is used to add the entry value to the entry array
+        Agrega una entrada de tipo EventGroup al array de entradas del paquete SD.
+
+        :param method_data: Diccionario con información del servicio y EventGroup.
+        :type method_data: dict
         """
         aux = []
         entry = SDEntry_EventGroup()
@@ -117,6 +149,21 @@ class someipSD():
         self.s.set_entryArray(aux)
         
     def craft_subscribeEventGroupACK_packet(self, sender, destino, service: int) -> Ether:
+        """
+        Construye un paquete SOME/IP-SD de tipo ACK en respuesta a una suscripción a EventGroup.
+
+        :param sender: ECU origen que genera el ACK.
+        :type sender: str
+
+        :param destino: ECU destino que hizo la suscripción.
+        :type destino: str
+
+        :param service: ID del servicio SOME/IP relacionado.
+        :type service: int
+
+        :return: Paquete Ethernet de ACK con la estructura de red completa.
+        :rtype: Ether
+        """
         data_dst = self.myParser.ecu1_to_ecu2(sender, destino)
         method_data = self.myParser.get_service_data(service)
 
@@ -138,4 +185,15 @@ class someipSD():
         return packetACKSD
     
     def sendSDpacket(self, pk, interface='eth1'):
+        """
+        Envía un paquete SOME/IP-SD por la interfaz de red especificada.
+
+        :param pk: Paquete Ethernet ya construido.
+        :type pk: Ether
+
+        :param interface: Interfaz de red por la que se enviará el paquete.
+        :type interface: str
+
+        :return: None
+        """
         sendp(x=pk, verbose=False, iface=interface)

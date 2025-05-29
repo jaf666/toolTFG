@@ -12,22 +12,43 @@ from typing import Dict, Any
 # cadena hexadecimal. Scapy calcula automáticamente el len del payload.
 
 class ValueState(IntEnum):
+    """
+    Estado de validez de un campo. Codificado como uint8.
+    """
     UNAVAILABLE = 0
     VALID = 1
     INVALID = 2
 
 class SpeedSignT(IntEnum):
+    """
+    Dirección del vehículo según la señal de velocidad.
+    """
     NULL_SPEED = 0
     FORWARD = 1
     REVERSE = 2
     UNAVAILABLE = 3
 
 class SpeedSupposedStateT(IntEnum):
+    """
+    Estado del vehículo respecto al movimiento supuesto.
+    """
     UNAVAILABLE = 0
     STANDSTILL = 1
     MOVING = 2
 
 class VehicleDynamicsPlugin:
+    """
+    Clase que simula los datos que conforman la payload y genera las estructuras
+    de payload codificadas para diferentes eventos SOME/IP.
+
+    Esta clase agrupa y mantiene el estado simulado de distintos parámetros
+    como velocidad, aceleraciones y estado de movimiento, los cuales pueden
+    ser consultados o modificados. Permite construir estructuras binarias 
+    que serán inyectadas como payload en mensajes SOME/IP.
+
+    Los datos se empaquetan usando la biblioteca `struct`, siguiendo el 
+    formato especificado por los archivos de definición de cada servicio.
+    """
     def __init__(self):
         self.vehicle_speed = {
             "vehicleSpeedValueState": ValueState.VALID,
@@ -81,12 +102,20 @@ class VehicleDynamicsPlugin:
 
     def get_payload_vehicle_speed(self) -> bytes:
         """
-        Función que devuelve una estructura empaquetada de bytes que establecen los diferentes campos
-        del evento vehicle_speed. Para este evento se tienen valores de 1 byte determinado por los
-        diferentes tipos enumerados definidos y dos float, que ocupan 4 bytes (float32).
-        Esto, se define al comienzo para determinar cómo se van a empaquetar los bytes.
+        Genera el payload binario correspondiente al evento `VehicleSpeed`, con los
+        campos codificados según lo definido en el archivo `.def`.
 
-        :return: Devuelve el pack de bytes formado para ser introducido en la payload.
+        Formato:
+        - 1 byte: vehicleSpeedValueState
+        - 4 bytes: vehicleSpeed
+        - 1 byte: vehicleSpeedSignValueState
+        - 1 byte: vehicleSpeedSign
+        - 1 byte: vehicleLowSpeedValueState
+        - 4 bytes: vehicleLowSpeed
+        - 1 byte: standStillSupposedValueState
+        - 1 byte: standStillSupposed
+
+        :return: Cadena de bytes lista para inyectarse como payload en el mensaje SOME/IP.
         :rtype: bytes
         """
         return struct.pack(
@@ -104,10 +133,11 @@ class VehicleDynamicsPlugin:
 
     def get_payload_accel_and_yaw(self) -> bytes:
         """
-        Función que devuelve una estructura empaquetada de bytes que establecen los diferentes campos
-        del evento vehicle_accel_yaw.
+        Genera el payload binario correspondiente al evento `VehicleAccelAndYaw`, 
+        que representa las aceleraciones y giros del vehículo, en formatos corregidos 
+        y sin corregir.
 
-        :return: Devuelve el pack de bytes formado para ser introducido en la payload.
+        :return: Payload codificado como cadena de bytes.
         :rtype: bytes
         """
         return struct.pack(
@@ -128,10 +158,11 @@ class VehicleDynamicsPlugin:
 
     def get_payload_speed_body(self) -> bytes:
         """
-        Función que devuelve una estructura empaquetada de bytes que establecen los diferentes campos
-        del evento vehicle_speed_body.
+        Genera el payload binario correspondiente al evento `VehicleSpeedBody`.
 
-        :return: Devuelve el pack de bytes formado para ser introducido en la payload.
+        Contiene únicamente dos campos: estado y valor de la velocidad.
+
+        :return: Payload codificado como cadena de bytes.
         :rtype: bytes
         """
         return struct.pack(
@@ -142,7 +173,15 @@ class VehicleDynamicsPlugin:
 
     def get_payload(self, event: str) -> bytes:
         """
-        Devuelve el payload codificado según el evento.
+        Devuelve el payload correspondiente a un evento específico, basado en su nombre.
+
+        :param event: Nombre del evento solicitado (e.g., "VehicleSpeed").
+        :type event: str
+
+        :return: Payload binario listo para enviar en un mensaje SOME/IP.
+        :rtype: bytes
+
+        :raises ValueError: Si el nombre del evento no es reconocido.
         """
         if event == "VehicleSpeed":
             return self.get_payload_vehicle_speed()

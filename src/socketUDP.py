@@ -14,9 +14,21 @@ class socketHandler():
     """
     def bind_udp_socket(self, ip, port):
         """
-        Función para hacer bind al puerto, de no ser así se observará un mensaje ICMP de destination+
-        port unreachable, ya que no existe un puerto en el sistema operativo para recibir el mensaje
-        SOME/IP enviado por la ECU real en la ECU simulada.
+        Abre un socket UDP en la dirección IP y puerto especificados para 
+        permitir la recepción de mensajes SOME/IP.
+
+        Este paso es necesario para evitar que el sistema operativo genere 
+        mensajes ICMP de "destination port unreachable" cuando se recibe un 
+        mensaje destinado a un puerto no vinculado.
+
+        :param ip: Dirección IP local de la ECU simulada.
+        :type ip: str
+
+        :param port: Puerto UDP en el que se debe hacer bind.
+        :type port: int
+
+        :return: Objeto socket UDP vinculado, en modo no bloqueante.
+        :rtype: socket.socket
         """
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.bind((ip, port))
@@ -26,6 +38,27 @@ class socketHandler():
 
     # Aqui el service id no esta bien
     def escuchar_subscribe_eventgroup(self, ack, interface="eth1", timeout=5):
+        """
+        Escucha en la interfaz de red la llegada de un mensaje SOME/IP de tipo 
+        SubscribeEventGroup. Se utiliza un filtro en `sniff` para identificar 
+        y detener la captura cuando se detecta un paquete válido.
+
+        Además, se envía de forma anticipada un mensaje ACK usando un paquete
+        construido previamente, asumiendo que el cliente enviará una suscripción.
+
+        :param ack: Paquete SOME/IP de tipo ACK a enviar antes de escuchar.
+        :type ack: scapy.packet.Packet
+
+        :param interface: Interfaz de red por la que se escucharán los paquetes.
+        :type interface: str
+
+        :param timeout: Tiempo máximo de espera (en segundos) para la captura.
+        :type timeout: int
+
+        :return: Paquete SOME/IP recibido que cumple con las condiciones del filtro,
+                o `None` si no se detecta ninguno en el tiempo especificado.
+        :rtype: scapy.packet.Packet | None
+        """
         print("[INFO] Esperando SubscribeEventGroup...")
         # Se envia el ACK de forma anticipada dando por hecho que habra subscribe por parte del cliente.
         # De no haberlo se producira un error, ya que no encontrará el mensaje con el type indicado ni 

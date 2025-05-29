@@ -4,8 +4,15 @@ from typing import List, Optional, Dict, Any
 
 class Parser():
     """
-    This class is used to parse ECU definition from a json
-    and services packet data from a json
+    Clase encargada de parsear la definición de ECUs y de servicios desde archivos JSON.
+
+    Se utiliza para abstraer y simplificar el acceso a la configuración de red, 
+    identificadores SOME/IP y datos necesarios para la simulación de comunicación 
+    entre ECUs.
+
+    Los ficheros que se cargan son:
+    - ecu_data.json: contiene información de red y configuración de cada ECU.
+    - services.json: contiene la definición de los servicios y métodos SOME/IP.
     """
     # Se incluyen las rutas relatativas de los fichero que contienen la información
     # de las ECUs y de los servicios asociados a las mismas.
@@ -14,8 +21,11 @@ class Parser():
 
     def __init__(self):
         """
-        Método inicializador de la clase, carga los ficheros json una vez para evitar
-        múltiples cargas adicionales.
+        Constructor de la clase. Carga en memoria las definiciones de ECUs y servicios
+        a partir de los ficheros JSON correspondientes. Lanza un error si alguno
+        de los ficheros no existe.
+
+        :raises FileNotFoundError: Si no se encuentran los ficheros JSON necesarios.
         """
         if not os.path.isfile(Parser.ECU_DATA_PATH):
             raise FileNotFoundError(f"Missing ECU file: {Parser.ECU_DATA_PATH}")
@@ -29,7 +39,16 @@ class Parser():
 
     def data_by_key(self, ecu_definitions: List[Dict[str, Any]], key: str) -> Optional[Dict[str, Any]]:
         """
-        This method is used to get the data by name from the ecu definitions given by get_ecu_definition
+        Devuelve la definición de una ECU a partir de su nombre.
+
+        :param ecu_definitions: Lista de definiciones de ECUs.
+        :type ecu_definitions: List[Dict[str, Any]]
+
+        :param key: Nombre de la ECU a buscar.
+        :type key: str
+
+        :return: Diccionario con la definición de la ECU si se encuentra, None en caso contrario.
+        :rtype: Optional[Dict[str, Any]]
         """
         # Check if the key is in the ecu_definitions
         for ecu_definition in self.ecus:
@@ -41,8 +60,19 @@ class Parser():
     
     def ecu1_to_ecu2(self, ecu_src: str, ecu_dst: str) -> Dict[str, Any]:
         """
-        This method is used to get the origin and destination data from the ecu definitions
-        in order to send the packet
+        Obtiene los datos de red y puertos necesarios para la comunicación unicast
+        entre dos ECUs específicas.
+
+        :param ecu_src: Nombre de la ECU origen.
+        :type ecu_src: str
+
+        :param ecu_dst: Nombre de la ECU destino.
+        :type ecu_dst: str
+
+        :return: Diccionario con direcciones MAC, IP, puertos UDP/SOMEIP y VLAN.
+        :rtype: Dict[str, Any]
+
+        :raises None: Devuelve None si alguna de las ECUs no se encuentra.
         """
         # Check if the ecu_src and ecu_dst are in the ecu_definitions
         ecu_src_data = self.data_by_key(self.ecus, ecu_src)
@@ -67,8 +97,16 @@ class Parser():
     
     def multicast(self, ecu1: str) -> Dict[str, Any]:
         """
-        This method is used to get the multicast data from the ecu definitions
-        in order to send the packet
+        Obtiene los datos de red necesarios para realizar una comunicación multicast
+        desde una ECU específica.
+
+        :param ecu1: Nombre de la ECU que emite el mensaje multicast.
+        :type ecu1: str
+
+        :return: Diccionario con direcciones MAC, IP, puertos y opciones de configuración.
+        :rtype: Dict[str, Any]
+
+        :raises None: Devuelve None si la ECU no se encuentra.
         """
         # Check if the ecu1 is in the ecu_definitions
         ecu1_data = self.data_by_key(self.ecus, ecu1)
@@ -92,8 +130,16 @@ class Parser():
 
     def get_service_data(self, service_id: int) -> Optional[Dict[str, Any]]:
         """
-        Este método es usado para obetener los datos del servicio a partir del fichero
-        de definición de los servicios
+        Obtiene la definición completa de un servicio/método SOME/IP a partir de su ID.
+
+        El método busca en la estructura de servicios y devuelve una copia del método 
+        junto con la información de configuración de tipo FIND, OFFER, SUBSCRIBE y SOME/IP.
+
+        :param service_id: Identificador del método de servicio.
+        :type service_id: int
+
+        :return: Diccionario con la estructura del servicio, o None si no se encuentra.
+        :rtype: Optional[Dict[str, Any]]
         """
         for service in self.services:
             for method in service.get("methods", []):
@@ -133,6 +179,9 @@ class Parser():
     
     def get_ecus(self) -> List[str]:
         """
-        Método que devuelve las ecus disponibles
+        Devuelve una lista con los nombres de todas las ECUs definidas en el sistema.
+
+        :return: Lista con nombres de ECUs.
+        :rtype: List[str]
         """
         return [ecu["name"] for ecu in self.ecus]
