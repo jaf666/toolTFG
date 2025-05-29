@@ -12,7 +12,7 @@ from plugins.VehicleDynamicsPlugin import VehicleDynamicsPlugin
 class MyLab:
     """
     Clase para realizar las simulaciones requeridas.
-    Permite el inicio de un servidor SOME/IP skiguiendo el flujo determinado
+    Permite el inicio de un servidor SOME/IP siguiendo el flujo determinado
     por las especificaciones de AUTOSAR. Así como el envío de eventos una vez
     iniciado el mismo.
     """
@@ -61,16 +61,18 @@ class MyLab:
 
                 offer_packet = sd.craft_offer_packet(origen, destino, service_id)
                 ack = sd.craft_subscribeEventGroupACK_packet(origen, destino, service_id)
-
+                
                 print("[INFO] Enviando OFFER...")
                 sd.sendSDpacket(offer_packet)
-
+                
                 pkt_subscribe = sock.escuchar_subscribe_eventgroup(ack)
+                for x in range(0, 15):
+                    self.someip_server_send_event(service_id)
                 
                 i+=1
                 # Aqui se incia el envio de eventos someip. El ttl es de 3 asi que cada 0.2s se envia un paquete
                 # 3/0.2 nos da apra 15 paquetes la secuencia antes de que se desuscriba.
-                self.someip_server_send_event(service_id)
+                
 
             udp_sock.close()
             return True, "Servidor iniciado correctamente"
@@ -89,10 +91,10 @@ class MyLab:
         :return: verdict and comment
         :rtype: bool, str
         """
-        some = Someip()
 
         try:
             print("[INFO] Enviando EVENTO...")
+            some = Someip()
             pk = some.craft_someip_pk(service_id, self.data_dst)
             pk.show()
             some.send_someip(pk)

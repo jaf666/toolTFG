@@ -27,7 +27,6 @@ class SpeedSupposedStateT(IntEnum):
     STANDSTILL = 1
     MOVING = 2
 
-
 class VehicleDynamicsPlugin:
     def __init__(self):
         self.vehicle_speed = {
@@ -86,6 +85,9 @@ class VehicleDynamicsPlugin:
         del evento vehicle_speed. Para este evento se tienen valores de 1 byte determinado por los
         diferentes tipos enumerados definidos y dos float, que ocupan 4 bytes (float32).
         Esto, se define al comienzo para determinar cómo se van a empaquetar los bytes.
+
+        :return: Devuelve el pack de bytes formado para ser introducido en la payload.
+        :rtype: bytes
         """
         return struct.pack(
             "<BfBBBfBB",
@@ -101,6 +103,13 @@ class VehicleDynamicsPlugin:
 
 
     def get_payload_accel_and_yaw(self) -> bytes:
+        """
+        Función que devuelve una estructura empaquetada de bytes que establecen los diferentes campos
+        del evento vehicle_accel_yaw.
+
+        :return: Devuelve el pack de bytes formado para ser introducido en la payload.
+        :rtype: bytes
+        """
         return struct.pack(
             "<BfBfBfBfBfBf",
             self.vehicle_accel_yaw["longitudinalAccelCorrectedValueState"],
@@ -118,6 +127,13 @@ class VehicleDynamicsPlugin:
         )
 
     def get_payload_speed_body(self) -> bytes:
+        """
+        Función que devuelve una estructura empaquetada de bytes que establecen los diferentes campos
+        del evento vehicle_speed_body.
+
+        :return: Devuelve el pack de bytes formado para ser introducido en la payload.
+        :rtype: bytes
+        """
         return struct.pack(
             "<Bf",
             self.vehicle_speed_body["vehicleSpeedBodyValueState"],

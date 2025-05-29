@@ -18,13 +18,13 @@ class Someip():
         self.some = SOMEIP()
         self.myParser = Parser()
         Someip.__session_id += 1
-        self.header.session_id = Someip.__session_id
+        self.some.session_id = Someip.__session_id
 
     def craft_someip_pk(self, service: int, data_dst: Dict[str, Any]) -> Ether:
         data = self.myParser.get_service_data(service)
         # Antes esto:
         #payload = data["SOMEIP"]["Payload"]
-
+        #new = Someip()
         # Creamos la instancia del servicio a simular con la payload
         plugin = VehicleDynamicsPlugin()
         payload = plugin.get_payload("VehicleSpeed")
@@ -42,7 +42,6 @@ class Someip():
         self.some.srv_id = 568
         self.some.sub_id = 32908
         self.some.client_id = 0x0701
-        self.some.session_id = 0x0001
         self.some.proto_ver = 0x01
         self.some.iface_ver = 0x01
         self.some.msg_type = 0x02
@@ -65,11 +64,4 @@ class Someip():
     
     def send_someip(self, pk):
         sendp(x=pk, verbose=False, iface='eth1')
-
-    def custom_payload():
-        """
-        Función para customizar el payload, la idea sería dado un servicio parsear el def
-        file asociado al evento que queremos simular. Extrayendo sus campos para poder establecerlos
-        """
-        pass
 
